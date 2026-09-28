@@ -1,0 +1,6 @@
+*.sql
+.env
+venv/
+openclaw/
+node_modules/
+.DS_Store
