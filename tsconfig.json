@@ -1,12 +1,13 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "target": "ES2023",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "strict": true,
-    "types": ["node"]
+    "types": ["node"],
+    "skipLibCheck": true
   },
-  "include": ["nl-property-search/**/*.ts"]
+  "include": ["nl-property-search", "mls-search"]
 }

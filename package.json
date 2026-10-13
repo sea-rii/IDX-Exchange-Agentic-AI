@@ -1,6 +1,6 @@
 {
   "name": "idx-exchange-agentic-ai",
-  "type": "module",
+  "type": "commonjs",
   "version": "1.0.0",
   "description": "Multi-agent real estate assistant built on OpenClaw (IDX Exchange internship).",
   "main": "index.js",
@@ -14,13 +14,15 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/sea-rii/IDX-Exchange-Agentic-AI/issues"
   },
   "homepage": "https://github.com/sea-rii/IDX-Exchange-Agentic-AI#readme",
   "devDependencies": {
-    "@types/node": "^26.6.4",
+    "@types/node": "^26.6.5",
     "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "mysql2": "^3.24.6"
   }
 }
