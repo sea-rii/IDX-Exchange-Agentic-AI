@@ -1,4 +1,4 @@
-// Conversational property search (handbook Week 4).
+// Conversational property search
 //
 // handleMessage() takes one message from a user and returns the reply. Between messages it keeps
 // the user's filters in their session, so each message only has to say what is new:

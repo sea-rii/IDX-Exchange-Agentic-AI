@@ -4,7 +4,7 @@
 // Start over:    node conversational-search/scripts/chat.ts --user +15551234567 --reset
 // See session:   node conversational-search/scripts/chat.ts --user +15551234567 --show
 // Local chat:    node conversational-search/scripts/chat.ts --repl
-//                (type messages in the terminal, no OpenClaw needed; type "exit" to quit)
+
 import { parseArgs } from "node:util";
 import path from "node:path";
 import readline from "node:readline/promises";

@@ -1,10 +1,6 @@
-// Session memory for the conversational search (handbook Week 4).
-//
-// The handbook keeps sessions in a Map. That only works while one Node process stays running.
-// OpenClaw starts a new process every time it runs the skill, so a Map would be empty on every
-// message. This file keeps the same getSession / updateSession / clearSession functions, but
-// the store can be either the handbook Map (used in tests) or a JSON file per user (used by the
-// skill), so the session survives between messages.
+// Session memory for the conversational search.
+
+
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
