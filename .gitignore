@@ -4,3 +4,4 @@ venv/
 openclaw/
 node_modules/
 .DS_Storenode_modules/
+conversational-search/sessions/

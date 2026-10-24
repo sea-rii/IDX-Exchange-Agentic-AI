@@ -6,8 +6,8 @@
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "strict": true,
-    "types": ["node"],
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "types": ["node"]
   },
-  "include": ["nl-property-search", "mls-search"]
+  "include": ["nl-property-search/**/*.ts", "mls-search/**/*.ts", "conversational-search/**/*.ts"]
 }

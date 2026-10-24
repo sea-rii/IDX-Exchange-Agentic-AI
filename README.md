@@ -12,6 +12,7 @@ IDX-Exchange-Agentic-AI/
 ├── data/                   # MLS .sql files (not committed)
 ├── nl-property-search/     # Week 2 skill
 ├── mls-search/             # Week 3 skill
+├── conversational-search/  # Week 4 skill
 ├── architecture.md         # Week 1 architecture diagrams
 ├── package.json
 ├── tsconfig.json
@@ -120,6 +121,51 @@ mls-search/
 └── tests/
     └── mls.test.ts     # 12 tests, no database needed
 ```
+
+---
+
+## Week 4: Conversational Property Search Agent
+ 
+Skill folder: `conversational-search/`
+ 
+This skill turns the one-message search from Week 3 into a conversation. The agent asks
+follow-up questions, remembers the user's filters between messages, and updates the results
+when the user adds or changes something. It uses the Week 2 parser and the Week 3 search code.
+ 
+```
+conversational-search/
+├── SKILL.md                    # instructions OpenClaw reads
+├── package.json
+├── scripts/
+│   ├── session.ts              # session memory: getSession, updateSession, clearSession
+│   ├── answers.ts              # reads short replies like "Irvine", "1.2M", "a house", "any"
+│   ├── agent.ts                # handleMessage(): decides what to ask or searches
+│   └── chat.ts                 # command the skill runs, plus a local chat mode
+└── tests/
+    └── conversation.test.ts    # 19 tests, no database needed
+```
+ 
+### How it works
+ 
+1. Every message goes through the Week 2 parser. Short answers like "Irvine" or "1.2M" are
+   read using the question the agent just asked.
+2. New filters are added to the user's session. The old ones stay.
+3. Before the first search, the agent asks for city, budget and home type. It skips a question
+   if the user already gave that detail.
+4. Then it searches `rets_property` and shows 5 results with address, price, beds/baths and
+   photo count.
+5. After that, every change runs the search again right away.
+| User says | What happens |
+|-----------|--------------|
+| `Find homes in Irvine` | Saves the city, asks for a budget |
+| `Under $1.2M` or `1.2M` | Saves the max price, asks for a home type |
+| `any`, `no preference` | Skips that question |
+| `just show me` | Searches now with the filters so far |
+| `with a pool`, `at least 2 beds` | Adds a filter and searches again |
+| `what about Tustin?` | Changes the city, keeps the other filters |
+| `any price`, `don't need a pool` | Removes that filter |
+| `more` | Next 5 results |
+| `start over` | Clears the session |
 
 ### Run it
 
