@@ -9,5 +9,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["nl-property-search/**/*.ts", "mls-search/**/*.ts", "conversational-search/**/*.ts"]
+  "include": ["nl-property-search/**/*.ts", "mls-search/**/*.ts", "conversational-search/**/*.ts", "market-stats/**/*.ts"]
 }
