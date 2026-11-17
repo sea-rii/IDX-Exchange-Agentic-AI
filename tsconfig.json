@@ -15,6 +15,7 @@
     "conversational-search/**/*.ts",
     "market-stats/**/*.ts",
     "semantic-search/**/*.ts",
-    "recommendations/**/*.ts"
+    "recommendations/**/*.ts",
+    "rag-assistant/**/*.ts"
   ]
 }
