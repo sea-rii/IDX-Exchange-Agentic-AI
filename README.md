@@ -1,19 +1,30 @@
 # IDX Exchange Agentic AI
 
-My work for the IDX Exchange AI Agentic Engineer Intern. The project is a real estate
-assistant built on OpenClaw. You send it a message (WhatsApp or the OpenClaw dashboard), it
-turns the message into search filters, queries the MLS data in MySQL, and replies with
-property cards.
+My work for the IDX Exchange AI Agentic Engineer Internship. The project is a real estate
+assistant built on OpenClaw. You send it a message (WhatsApp or the OpenClaw dashboard), and a
+skill answers it using the MLS data in MySQL: property search, market stats, style search,
+recommendations and a document assistant.
+
+Each week is one skill in its own folder. Every skill has a `SKILL.md` that tells OpenClaw when
+and how to run it, a `scripts/` folder, and tests that run without MySQL or OpenAI.
 
 ## Folder structure
 
 ```
 IDX-Exchange-Agentic-AI/
-├── data/                   # MLS .sql files (not committed)
-├── nl-property-search/     # Week 2 skill
-├── mls-search/             # Week 3 skill
-├── conversational-search/  # Week 4 skill
 ├── architecture.md         # Week 1 architecture diagrams
+├── nl-property-search/     # Week 2: message -> search filters
+├── mls-search/             # Week 3: filters -> MySQL -> property cards
+├── conversational-search/  # Week 4: multi-turn search
+├── market-stats/           # Week 5: market statistics
+├── semantic-search/        # Week 6: embeddings and style search
+├── recommendations/        # Week 7: "homes like this one"
+├── rag-assistant/          # Week 8: answers from documents (RAG)
+├── data/
+│   ├── *.sql               # MLS data (not committed)
+│   ├── embeddings/         # Week 6 index (not committed)
+│   ├── rag-sources/        # Week 8 source documents
+│   └── rag-index/          # Week 8 index (not committed)
 ├── package.json
 ├── tsconfig.json
 └── .env                    # credentials (not committed)
@@ -36,148 +47,127 @@ IDX-Exchange-Agentic-AI/
    MYSQL_DATABASE=idx_exchange
    OPENAI_API_KEY=your_key
    ```
-4. Install packages:
-   ```bash
-   npm install
-   ```
+4. Install packages: `npm install`
+5. To use a skill in OpenClaw: `openclaw skills install ./<skill-folder>`, add it to `"skills"`
+   in `~/.openclaw/openclaw.json`, then start the gateway and open the dashboard.
 
 ---
+
+## Week 0: Setup
+
+Installed OpenClaw from source, set up MySQL, imported the MLS data, created the `.env` and
+`.gitignore`, and connected OpenClaw to WhatsApp. I locked WhatsApp down to my own number
+(`dmPolicy: "allowlist"`) after OpenClaw started replying to my contacts.
 
 ## Week 1: Architecture
 
-`architecture.md` shows how the parts of the system connect, with Mermaid diagrams:
-
-- A flow diagram from WhatsApp, through the OpenClaw gateway and agent, to the skills,
-  tools and the MySQL data.
-- A sequence diagram that walks through one example query from message to reply.
-
----
+`architecture.md` has two Mermaid diagrams: how a message flows from WhatsApp through the
+OpenClaw gateway and agent to the skills and MySQL, and a step-by-step walkthrough of one query.
 
 ## Week 2: Natural Language Property Search
 
-Skill folder: `nl-property-search/`
-
-This skill turns a free-text request into a filter object. For example,
-"Show me 3-bedroom condos in Irvine under $1.5M with a pool" becomes:
-
-```json
-{
-  "city": "Irvine",
-  "maxPrice": 1500000,
-  "beds": 3,
-  "type": "Condominium",
-  "pool": "True"
-}
-```
-
-It also lists each filter with its `rets_property` column, so Week 3 can query it directly.
-
-### Filters
-
-| Filter   | Column           | Example phrasing                    |
-|----------|------------------|-------------------------------------|
-| city     | `L_City`         | in Irvine, near Newport Beach       |
-| minPrice | `L_SystemPrice`  | over $800k, between $800k and $1.2M |
-| maxPrice | `L_SystemPrice`  | under $1.5M, up to 900,000          |
-| beds     | `L_Keyword2`     | 3-bedroom, 3 br, three bed          |
-| baths    | `LM_Dec_3`       | 2.5 bath, 2 ba                      |
-| sqft     | `LM_Int2_3`      | 1,800 sq ft, 2000+ sqft             |
-| type     | `L_Type_`        | condo, townhome, house, land        |
-| pool     | `PoolPrivateYN`  | with a pool (not "no pool")         |
-| hasView  | `ViewYN`         | ocean view (not "review")           |
-| maxHoa   | `AssociationFee` | HOA under $500, no HOA              |
-
-
-### Run it
+`nl-property-search/` turns a message like "3-bedroom condos in Irvine under $1.5M with a pool"
+into filters (city, price, beds, baths, sqft, home type, pool, view, HOA), each mapped to its
+`rets_property` column.
 
 ```bash
-node --test nl-property-search/tests/parser.test.ts
+node --test nl-property-search/tests/parser.test.ts      # 16 tests
 node nl-property-search/scripts/parse.ts "Show me 3-bedroom condos in Irvine under \$1.5M with a pool"
 ```
 
-Result: 16 of 16 tests pass (15 test queries and 1 column mapping test).
-
----
-
 ## Week 3: MLS Database Integration
 
-Skill folder: `mls-search/`
-
-This skill takes the Week 2 filters, queries MySQL, and returns property cards. It searches
-two tables:
-
-- `rets_property` for active listings, sorted by price, 5 per page.
-- `california_sold` for sold homes in a city from the last 12 months.
-
-```
-mls-search/
-├── SKILL.md            # instructions OpenClaw reads
-├── scripts/
-│   ├── db.ts           # MySQL connection, reads .env
-│   ├── sql.ts          # builds the SQL queries
-│   ├── listings.ts     # searchActiveListings() and getSoldComps()
-│   ├── format.ts       # turns rows into property cards
-│   └── search.ts       # command the skill runs
-└── tests/
-    └── mls.test.ts     # 12 tests, no database needed
-```
-
----
-
-## Week 4: Conversational Property Search Agent
- 
-Skill folder: `conversational-search/`
- 
-This skill turns the one-message search from Week 3 into a conversation. The agent asks
-follow-up questions, remembers the user's filters between messages, and updates the results
-when the user adds or changes something. It uses the Week 2 parser and the Week 3 search code.
- 
-```
-conversational-search/
-├── SKILL.md                    # instructions OpenClaw reads
-├── package.json
-├── scripts/
-│   ├── session.ts              # session memory: getSession, updateSession, clearSession
-│   ├── answers.ts              # reads short replies like "Irvine", "1.2M", "a house", "any"
-│   ├── agent.ts                # handleMessage(): decides what to ask or searches
-│   └── chat.ts                 # command the skill runs, plus a local chat mode
-└── tests/
-    └── conversation.test.ts    # 19 tests, no database needed
-```
- 
-### How it works
- 
-1. Every message goes through the Week 2 parser. Short answers like "Irvine" or "1.2M" are
-   read using the question the agent just asked.
-2. New filters are added to the user's session. The old ones stay.
-3. Before the first search, the agent asks for city, budget and home type. It skips a question
-   if the user already gave that detail.
-4. Then it searches `rets_property` and shows 5 results with address, price, beds/baths and
-   photo count.
-5. After that, every change runs the search again right away.
-| User says | What happens |
-|-----------|--------------|
-| `Find homes in Irvine` | Saves the city, asks for a budget |
-| `Under $1.2M` or `1.2M` | Saves the max price, asks for a home type |
-| `any`, `no preference` | Skips that question |
-| `just show me` | Searches now with the filters so far |
-| `with a pool`, `at least 2 beds` | Adds a filter and searches again |
-| `what about Tustin?` | Changes the city, keeps the other filters |
-| `any price`, `don't need a pool` | Removes that filter |
-| `more` | Next 5 results |
-| `start over` | Clears the session |
-
-### Run it
+`mls-search/` runs the Week 2 filters against MySQL and returns property cards: active listings
+from `rets_property` (5 per page, sorted by price) and recent sales from `california_sold`.
+Its `db.ts` and card format are reused by every later week.
 
 ```bash
-# Tests
-node --test mls-search/tests/mls.test.ts
-
-# Active listings
+node --test mls-search/tests/mls.test.ts                 # 12 tests
 node mls-search/scripts/search.ts "Show me 3 bedroom condos in Irvine under \$1.5M"
-node mls-search/scripts/search.ts --page 2 "Show me 3 bedroom condos in Irvine under \$1.5M"
-
-# Sold homes
 node mls-search/scripts/search.ts --sold "What have homes in Pasadena sold for?"
-node mls-search/scripts/search.ts --sold --months 24 "What have homes in Pasadena sold for?"
+```
+
+## Week 4: Conversational Property Search
+
+`conversational-search/` makes the search a conversation. It asks for city, budget and home type
+(skipping anything already given), remembers filters between messages, and searches again when
+the user adds or changes something ("with a pool", "what about Tustin?", "more", "start over").
+
+```bash
+node --test conversational-search/tests/conversation.test.ts   # 19 tests
+```
+
+## Week 5: Market Statistics
+
+`market-stats/` answers questions like "Is now a good time to buy in San Diego?" with median and
+average price, $/sqft, days on market, list-to-close ratio, months of supply, a monthly trend,
+and a market read (leans seller's, buyer's or mixed) with the reasons.
+
+- Time windows count back from the newest sale, not today, because the data is a fixed export.
+- The data only covers about 5 full months, so the report detects which months are covered.
+- Close dates in the future (typos like 2072) are skipped.
+
+```bash
+node --test market-stats/tests/market.test.ts            # 12 tests
+node market-stats/scripts/market.ts "Is now a good time to buy in San Diego?"
+node market-stats/scripts/market.ts --by type "How is the market in Pasadena?"
+node market-stats/scripts/market.ts --top
+```
+
+## Week 6: Embeddings and Semantic Search
+
+`semantic-search/` finds listings by style or feel ("charming craftsman with mountain views")
+using OpenAI `text-embedding-3-small` embeddings of each listing's details and description.
+
+- All 55,212 listings are embedded once and saved (about $0.32), not on every search.
+- 512 dimensions instead of 1536, so the index is 3x smaller and faster.
+- Hard filters from the Week 2 parser (city, price, beds...) are applied before ranking.
+
+```bash
+node --test semantic-search/tests/semantic.test.ts       # 16 tests
+node semantic-search/scripts/build-index.ts --dry-run    # cost estimate
+node semantic-search/scripts/build-index.ts
+node semantic-search/scripts/similar.ts "charming craftsman with mountain views and character"
+```
+
+## Week 7: Recommendation Engine
+
+`recommendations/` takes a listing the user likes (MLS number or address) and returns the 5 most
+similar active listings of the same home type. Each gets a score out of 100 (price 20, beds 15,
+city 15, size 10, style 40 from the Week 6 embeddings) and a price check against recent comps
+in `california_sold` (median $/sqft of similar-size sales in the same city).
+
+```bash
+node --test recommendations/tests/recommend.test.ts      # 12 tests
+node recommendations/scripts/recommend.ts "MLS# 1142070303"
+node recommendations/scripts/recommend.ts "177 Frame, Irvine"
+```
+
+## Week 8: Retrieval-Augmented Generation (RAG)
+
+`rag-assistant/` answers questions about real estate terms and MLS fields from source documents
+instead of the model's memory, and lists its sources.
+
+Documents in `data/rag-sources/`:
+
+| File | Covers |
+|---|---|
+| `trestle-fields.md` | RESO-standard field definitions (DOM, ClosePrice...), from the public RESO Data Dictionary 2.0 that Trestle uses |
+| `idx-schema-reference.md` | Handbook pages 4–5: what each column means, including IDX's own names (`L_SystemPrice`, `L_Keyword2`...) and how to join the tables |
+| `table-schema.md` | Every column in both tables, generated from MySQL |
+| `market-summaries.md` | Week 5 reports for the 15 busiest cities, generated |
+
+How it works: documents are split by heading into chunks, each chunk is embedded once, a question
+retrieves the 4 closest chunks, and `gpt-4o-mini` answers using only those chunks with citations.
+If nothing relevant is found, it says so instead of guessing.
+
+Still to add: the Real Estate Data Analyst Primer, for glossary terms like list-to-close ratio.
+
+```bash
+node --test rag-assistant/tests/rag.test.ts              # 14 tests
+node rag-assistant/scripts/make-schema-doc.ts            # writes table-schema.md
+node rag-assistant/scripts/make-market-docs.ts           # writes market-summaries.md
+node rag-assistant/scripts/build-index.ts                # less than a cent
+node rag-assistant/scripts/ask.ts "What does DOM mean?"
+node rag-assistant/scripts/ask.ts "What columns are in california_sold?"
 ```
